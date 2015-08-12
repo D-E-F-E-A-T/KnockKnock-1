@@ -1,0 +1,16 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion '23.0.0'
+    compileOptions.encoding = "UTF-8"
+    defaultConfig {
+        minSdkVersion 10
+        targetSdkVersion 22
+    }
+    productFlavors {
+    }
+}
+
+dependencies {
+}

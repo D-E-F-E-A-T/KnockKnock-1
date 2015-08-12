@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">开心一刻</string>
+
+    <string name="pull_data_success">更新了%1$d条笑话</string>
+    <string name="pull_data_no_more_joke">没有更多笑话了</string>
+    <string name="pull_data_error">下载失败，请稍后重试</string>
+
+    <string name="share">分享</string>
+    <string name="share_weixin_circle">微信朋友圈</string>
+    <string name="share_weixin_friend">微信好友</string>
+    <string name="share_weibo">新浪微博</string>
+    <string name="share_qq">QQ</string>
+    <string name="share_qzone">QQ空间</string>
+
+    <string name="copy_to_clipboard">已复制链接到剪切板</string>
+</resources>
