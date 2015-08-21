@@ -5,11 +5,14 @@ import android.content.Intent;
 
 import com.baidu.android.pushservice.PushMessageReceiver;
 import com.cyanflxy.dapenti.htmlparser.JokeBean;
+import com.github.cyanflxy.knockknock.statistics.StatUtils;
 import com.github.cyanflxy.knockknock.ui.SingleJokeActivity;
 
 import java.util.List;
 
 public class BaiduPushReceiver extends PushMessageReceiver {
+
+    public static final String API_KEY = "mkdFy97aCrSkHX0RtAkxUdIA";
 
 //    public static final String BAIDU_PUSH_RECEIVER = "BaiduPushReceiver";
 
@@ -41,7 +44,8 @@ public class BaiduPushReceiver extends PushMessageReceiver {
      */
     @Override
     public void onNotificationClicked(Context context, String title, String description, String customContentString) {
-//        Log.i(BAIDU_PUSH_RECEIVER, "title: " + title + "; description: " + description + "; customContentString: " + customContentString);
+
+        StatUtils.onEvent(StatUtils.EVENT_NOTIFICATION_JOKE);
 
         JokeBean bean = new JokeBean(0, title, description);
         Intent intent = new Intent(context, SingleJokeActivity.class);

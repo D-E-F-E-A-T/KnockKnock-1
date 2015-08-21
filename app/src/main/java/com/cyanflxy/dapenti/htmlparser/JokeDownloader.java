@@ -1,6 +1,7 @@
 package com.cyanflxy.dapenti.htmlparser;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.Response.ErrorListener;
@@ -8,216 +9,273 @@ import com.android.volley.Response.Listener;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.Volley;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 public class JokeDownloader {
 
-    private int lastJokePage;
-    private int maxJokeId;
-
     private RequestQueue requestQueue;
 
     private List<String> jokeHrefList;
     private List<JokeBean> jokeBeanList;
-    private int jokeContentErrorNumber;
 
-    private JokeHrefResultListener jokeHrefResultListener;
-    private HrefDownloadErrorListener hrefDownloadErrorListener;
-
-    private JokeContentDownloadListener jokeContentDownloadListener;
+    private HrefResultListener hrefResultListener;
+    private HrefErrorListener hrefErrorListener;
+    private ContentResultListener contentResultListener;
+    private ContentErrorListener contentErrorListener;
 
     private OnJokeDownloadListener listener;
 
+    private int hrefDownloadCount;
+    private int currentJokePage;
+    private int jokeContentErrorNumber;
+    private int currentProgress;
+    private boolean isQuit;
+
     public JokeDownloader(Context c, OnJokeDownloadListener l) {
         listener = l;
-
         requestQueue = Volley.newRequestQueue(c);
     }
 
     public void download(int lastPage, int lastId) {
+        isQuit = false;
+        currentProgress = 0;
+
+        currentJokePage = lastPage - 1;
+        if (currentJokePage <= 0) {
+            currentJokePage = 1;
+        }
 
         jokeContentErrorNumber = 0;
         jokeHrefList = new LinkedList<String>();
         jokeBeanList = new LinkedList<JokeBean>();
 
-        jokeHrefResultListener = new JokeHrefResultListener();
-        hrefDownloadErrorListener = new HrefDownloadErrorListener();
-        jokeContentDownloadListener = new JokeContentDownloadListener();
-
-
-        lastJokePage = lastPage - 1;
-        if (lastJokePage <= 0) {
-            lastJokePage = 1;
-        }
-
-        maxJokeId = lastId;
-        jokeHrefResultListener.setLastJokeId(lastId);
+        hrefResultListener = new HrefResultListener(lastId);
+        hrefErrorListener = new HrefErrorListener();
+        contentResultListener = new ContentResultListener(lastId);
+        contentErrorListener = new ContentErrorListener();
 
         requestQueue.start();
-        downloadJokeHrefUntil(lastJokePage);
 
+        if (lastPage != currentJokePage) {
+            downloadJokeHrefUntil(lastPage);
+            hrefDownloadCount = 2;
+        } else {
+            hrefDownloadCount = 1;
+        }
+        downloadJokeHrefUntil(currentJokePage);
+
+        sendProgress(5);
     }
 
     private void downloadJokeHrefUntil(int page) {
-        jokeHrefResultListener.setCurrentPage(page);
-        hrefDownloadErrorListener.setCurrentPage(page);
-
         JokeHrefRequest request = new JokeHrefRequest(page,
-                jokeHrefResultListener, hrefDownloadErrorListener);
-
+                hrefResultListener, hrefErrorListener);
         requestQueue.add(request);
     }
 
-    private void checkJokeHref() {
-        if (jokeHrefList.size() == 0) {
-            if (hrefDownloadErrorListener.getErrorTimes() > 0) {
-                listener.onDownloadError();
-            } else {
-                listener.onNoMoreContent();
+    private void checkJokeHref(List<String> hrefs) {
+
+        if (hrefs != null && hrefs.size() > 0) {
+            jokeHrefList.addAll(hrefs);
+
+            // 逆序下载
+            for (int i = hrefs.size() - 1; i >= 0; i--) {
+                downloadJoke(hrefs.get(i));
             }
-            return;
         }
 
-        for (String url : jokeHrefList) {
-            downloadJoke(url, 0);
+        // 检查进度
+        int resultCount = hrefResultListener.resultCount + hrefErrorListener.errorTimes;
+
+        // 链接页面处理完毕
+        if (resultCount == hrefDownloadCount) {
+
+            if (jokeHrefList.size() == 0) {
+                // 没有笑话链接，就是出错了或者没有了
+                requestQueue.stop();
+                sendProgress(100);
+
+                if (hrefErrorListener.errorTimes > 0) {
+                    listener.onDownloadError(currentJokePage, contentResultListener.maxJokeId);
+                } else {
+                    listener.onNoMoreContent();
+                }
+            } else {
+                // 有笑话链接，正在下载
+                calculateProgress();
+            }
+
+        } else {
+            calculateProgress();
         }
+
     }
 
-    private void downloadJoke(String url, int tryTimes) {
-        JokeContentDownloadErrorListener errorListener =
-                new JokeContentDownloadErrorListener(url, tryTimes);
+    private void downloadJoke(String url) {
         JokeContentRequest request = new JokeContentRequest(url,
-                jokeContentDownloadListener, errorListener);
+                contentResultListener, contentErrorListener);
         requestQueue.add(request);
     }
 
     private void checkEnd() {
-        // 检查是否下载完毕
-        if (jokeBeanList.size() + jokeContentErrorNumber != jokeHrefList.size()) {
+        if (isQuit) {
             return;
         }
 
+        // 检查是否下载完毕
+        int hrefResultCount = hrefResultListener.resultCount + hrefErrorListener.errorTimes;
+        if (hrefResultCount != hrefDownloadCount) {
+            calculateProgress();
+            return;
+        }
+        if (jokeBeanList.size() + jokeContentErrorNumber != jokeHrefList.size()) {
+            calculateProgress();
+            return;
+        }
+
+        //下载完毕
+        isQuit = true;
+        requestQueue.stop();
+        sendProgress(100);
+
         if (jokeBeanList.size() == 0) {
-            listener.onDownloadError();
+            listener.onDownloadError(currentJokePage, contentResultListener.maxJokeId);
         } else {
-            listener.onDownload(jokeBeanList, lastJokePage, maxJokeId);
+            listener.onDownload(jokeBeanList, currentJokePage, contentResultListener.maxJokeId);
+        }
+
+    }
+
+    public void cancel() {
+        if (isQuit) {
+            return;
+        }
+
+        isQuit = true;
+        requestQueue.stop();
+
+        if (jokeBeanList.size() != 0) {
+            listener.onDownload(jokeBeanList, currentJokePage, contentResultListener.maxJokeId);
+        }
+
+    }
+
+    // 根据当前状态计算进度
+    private void calculateProgress() {
+        int progress = 5;
+
+        int hrefResultCount = hrefResultListener.resultCount + hrefErrorListener.errorTimes;
+        int jokeResult = jokeBeanList.size() + jokeContentErrorNumber;
+
+        if (hrefResultCount != hrefDownloadCount) {
+            progress += 5;
+            progress += jokeResult;
+        } else {
+            progress += 10;
+            progress += 85 * jokeResult / jokeHrefList.size();
+        }
+
+        sendProgress(progress);
+    }
+
+    private void sendProgress(int progress) {
+        if (currentProgress < progress) {
+            currentProgress = progress;
+            if (listener != null) {
+                listener.onProgress(progress);
+            }
         }
     }
 
-    private class JokeHrefResultListener implements Listener<List<String>> {
+    private class HrefResultListener implements Listener<List<String>> {
 
-        private int currentPage;
         private int lastJokeId;
+        public int resultCount = 0;
 
-        public void setCurrentPage(int page) {
-            currentPage = page;
-        }
-
-        public void setLastJokeId(int jokeId) {
-            lastJokeId = jokeId;
+        public HrefResultListener(int lastJokeId) {
+            this.lastJokeId = lastJokeId;
         }
 
         @Override
         public void onResponse(List<String> response) {
-
-            boolean end = false;
+            resultCount++;
 
             if (response.size() > 0) {
+                List<String> resultHref = new ArrayList<String>(response.size());
+
                 for (String str : response) {
                     int id = HtmlParserUtils.getId(str);
                     if (id > lastJokeId) {
-                        jokeHrefList.add(str);
+                        resultHref.add(str);
                     } else {
-                        end = true;
+                        break;
                     }
                 }
-            } else {
-                end = true;
-            }
 
-            if (end) {
-                checkJokeHref();
+                checkJokeHref(resultHref);
             } else {
-                hrefDownloadErrorListener.clearTryTimes();
-                downloadJokeHrefUntil(currentPage + 1);
+                checkJokeHref(null);
             }
         }
     }
 
-    private class HrefDownloadErrorListener implements ErrorListener {
+    private class HrefErrorListener implements ErrorListener {
 
-        private int currentPage;
-        private int tryTimes;
-        private int errorTimes = 0;
-
-        public void setCurrentPage(int page) {
-            currentPage = page;
-        }
-
-        public void clearTryTimes() {
-            tryTimes = 0;
-        }
-
-        public int getErrorTimes() {
-            return errorTimes;
-        }
+        public int errorTimes = 0;
 
         @Override
         public void onErrorResponse(VolleyError error) {
-            error.printStackTrace();
-
-            if (tryTimes < 3) {
-                tryTimes++;
-                downloadJokeHrefUntil(currentPage);
-            } else {
-                errorTimes++;
-                checkJokeHref();
-            }
+            errorTimes++;
+            checkJokeHref(null);
         }
     }
 
-    private class JokeContentDownloadListener implements Listener<JokeBean> {
+    private class ContentResultListener implements Listener<JokeBean> {
+
+        private int maxJokeId = 0;
+
+        public ContentResultListener(int maxId) {
+            maxJokeId = maxId;
+        }
 
         @Override
         public void onResponse(JokeBean response) {
-            jokeBeanList.add(response);
 
-            if (maxJokeId < response.id) {
-                maxJokeId = response.id;
+            if (TextUtils.isEmpty(response.content)) {
+                jokeContentErrorNumber++;
+            } else {
+                jokeBeanList.add(response);
+
+                if (maxJokeId < response.id) {
+                    maxJokeId = response.id;
+                }
             }
 
             checkEnd();
         }
     }
 
-    private class JokeContentDownloadErrorListener implements ErrorListener {
-
-        private String jokeUrl;
-        private int tryTimes;
-
-        public JokeContentDownloadErrorListener(String url, int tryTimes) {
-            jokeUrl = url;
-            this.tryTimes = tryTimes;
-        }
+    private class ContentErrorListener implements ErrorListener {
 
         @Override
         public void onErrorResponse(VolleyError error) {
-            if (tryTimes < 3) {
-                tryTimes++;
-                downloadJoke(jokeUrl, tryTimes);
-            } else {
-                jokeContentErrorNumber++;
-                checkEnd();
-            }
+            error.printStackTrace();
+
+            jokeContentErrorNumber++;
+            checkEnd();
         }
     }
 
     public interface OnJokeDownloadListener {
-        void onDownloadError();
+        void onDownloadError(int lastPage, int maxJokeId);
 
         void onNoMoreContent();
 
         void onDownload(List<JokeBean> list, int lastPage, int maxJokeId);
+
+        void onProgress(int progress);
+
     }
 }

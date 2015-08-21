@@ -1,16 +1,33 @@
 <resources>
     <string name="app_name">开心一刻</string>
 
-    <string name="pull_data_success">更新了%1$d条笑话</string>
-    <string name="pull_data_no_more_joke">没有更多笑话了</string>
-    <string name="pull_data_error">下载失败，请稍后重试</string>
+    <string name="downloading" translatable="false">正在下载</string>
+    <string name="pull_data_success" translatable="false">更新了%1$d条笑话</string>
+    <string name="pull_data_no_more_joke" translatable="false">没有更多笑话了</string>
+    <string name="pull_data_error" translatable="false">下载失败，请稍后重试</string>
 
-    <string name="share">分享</string>
-    <string name="share_weixin_circle">微信朋友圈</string>
-    <string name="share_weixin_friend">微信好友</string>
-    <string name="share_weibo">新浪微博</string>
-    <string name="share_qq">QQ</string>
-    <string name="share_qzone">QQ空间</string>
+    <string name="share" translatable="false">分享</string>
+    <string name="share_weixin_circle" translatable="false">微信朋友圈</string>
+    <string name="share_weixin_friend" translatable="false">微信好友</string>
+    <string name="share_weibo" translatable="false">新浪微博</string>
+    <string name="share_qq" translatable="false">QQ</string>
+    <string name="share_qzone" translatable="false">QQ空间</string>
 
-    <string name="copy_to_clipboard">已复制链接到剪切板</string>
+    <string name="copy_to_clipboard" translatable="false">已复制链接到剪切板</string>
+
+    <string name="active_notification_tip">几日不见，甚是想念。呈上笑话几则请君观阅</string>
+
+    <string name="scan_qr_download" translatable="false">扫描二维码下载应用</string>
+    <string name="share_app" translatable="false">分享下载链接给好友</string>
+
+    <string name="share_app_title">推荐“开心一刻”，逗比一枚，很有意思</string>
+    <string name="app_introduce">海量笑话，每日更新，博君一笑，解除疲劳。</string>
+
+    <string name="share_success">分享成功</string>
+    <string name="share_fail">分享失败</string>
+    <string name="create_bitmap_error">创建分享图片失败，请重试。</string>
+    <string name="share_joke_summary">更多笑话尽在“开心一刻”。</string>
+    <string name="share_from">来自:</string>
+
+    <string name="auth_fail">授权失败</string>
 </resources>

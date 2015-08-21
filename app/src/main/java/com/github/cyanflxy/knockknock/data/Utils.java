@@ -3,7 +3,9 @@ package com.github.cyanflxy.knockknock.data;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.Environment;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -31,4 +33,16 @@ public class Utils {
         }
         return "";
     }
+
+    public static String getAppLocalFolder() {
+        File parent = new File(Environment.getExternalStorageDirectory(), "KnockKnock");
+        if (!parent.exists()) {
+            if (!parent.mkdir()) {
+                return null;
+            }
+        }
+
+        return parent.getAbsolutePath();
+    }
+
 }

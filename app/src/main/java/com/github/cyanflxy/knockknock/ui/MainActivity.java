@@ -1,8 +1,9 @@
 package com.github.cyanflxy.knockknock.ui;
 
-import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Build;
@@ -28,16 +29,23 @@ import com.github.cyanflxy.knockknock.R;
 import com.github.cyanflxy.knockknock.data.DataSharedPreferences;
 import com.github.cyanflxy.knockknock.data.JokeDataBase;
 import com.github.cyanflxy.knockknock.data.Utils;
-import com.github.cyanflxy.knockknock.share.ShareJoke;
+import com.github.cyanflxy.knockknock.notification.ActiveTimer;
+import com.github.cyanflxy.knockknock.share.ShareUtil;
+import com.github.cyanflxy.knockknock.statistics.StatUtils;
 import com.markmao.pulltorefresh.widget.XListView;
+import com.umeng.update.UmengUpdateAgent;
 
 import java.util.List;
 
-public class MainActivity extends Activity implements OnItemClickListener, OnClickListener {
+public class MainActivity extends StatActivity implements OnItemClickListener, OnClickListener {
+
+    public static final String ARG_FROM_TIMER_NOTIFICATION = "start_from_timer_notification";
 
     private XListView listView;
     private CursorAdapter listAdapter;
     private JokeDownloader jokeDownloader;
+
+    private ProgressDialog progressDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +63,8 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
             view.setVisibility(View.VISIBLE);
         }
 
+        findViewById(R.id.share_app).setOnClickListener(this);
+
         JokeDataBase dataBase = JokeDataBase.getInstance();
 
         listView = (XListView) findViewById(R.id.list_view);
@@ -69,7 +79,9 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
         listView.setXListViewListener(new XListView.IXListViewListener() {
             @Override
             public void onRefresh() {
+                listView.stopRefresh();
                 downloadJoke();
+                StatUtils.onEvent(StatUtils.EVENT_UPDATE_JOKE);
             }
 
             @Override
@@ -79,26 +91,49 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
         });
 
         listView.setOnItemClickListener(this);
+        jokeDownloader = new JokeDownloader(this, listener);
 
+        // 友盟更新
+        UmengUpdateAgent.update(this);
+        ActiveTimer.startTimer();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (getIntent().getBooleanExtra(ARG_FROM_TIMER_NOTIFICATION, false)) {
+            listView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    downloadJoke();
+                }
+            }, 1500);
+        }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         ViewHolder holder = (ViewHolder) view.getTag();
 
-        Intent intent = new Intent(this, SingleJokeActivity.class);
-        intent.putExtra(SingleJokeActivity.ARG_JOKE, holder.jokeBean);
-        startActivity(intent);
-
+        if (holder != null) {
+            Intent intent = new Intent(this, SingleJokeActivity.class);
+            intent.putExtra(SingleJokeActivity.ARG_JOKE, holder.jokeBean);
+            startActivity(intent);
+        }
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
+            case R.id.share_app:
+                shareApp();
+                break;
             case R.id.joke_id:
                 copyJokeUrl((JokeBean) v.getTag());
                 break;
             case R.id.delete:
+                StatUtils.onEvent(StatUtils.EVENT_DELETE_JOKE);
                 delete((JokeBean) v.getTag());
                 break;
             case R.id.share:
@@ -108,6 +143,9 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
     }
 
     private void copyJokeUrl(JokeBean bean) {
+        if (bean == null) {
+            return;
+        }
         String url = JokeHrefRequest.JOKE_URL + bean.id;
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             //noinspection deprecation
@@ -122,18 +160,44 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
     }
 
     private void downloadJoke() {
-        if (jokeDownloader == null) {
-            int lastPage = DataSharedPreferences.getLastJokePage();
-            int lastJokeId = DataSharedPreferences.getMaxJokeId();
-
-            jokeDownloader = new JokeDownloader(this, listener);
-            jokeDownloader.download(lastPage, lastJokeId);
+        if (progressDialog == null) {
+            progressDialog = initProgressDialog();
         }
+
+        progressDialog.setProgress(0);
+        progressDialog.show();
+
+        int lastPage = DataSharedPreferences.getLastJokePage();
+        int lastJokeId = DataSharedPreferences.getMaxJokeId();
+        jokeDownloader.download(lastPage, lastJokeId);
+    }
+
+    private ProgressDialog initProgressDialog() {
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMax(100);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setTitle(R.string.downloading);
+
+        progressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
+            @Override
+            public void onCancel(DialogInterface dialog) {
+                if(jokeDownloader != null){
+                    jokeDownloader.cancel();
+                }
+            }
+        });
+        return progressDialog;
+    }
+
+    private void shareApp() {
+        ShareUtil.shareApp(this);
     }
 
     private void delete(JokeBean bean) {
-        JokeDataBase.getInstance().delete(bean.id);
-        refreshAdapter();
+        if (bean != null) {
+            JokeDataBase.getInstance().delete(bean.id);
+            refreshAdapter();
+        }
     }
 
     private void refreshAdapter() {
@@ -142,15 +206,22 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
     }
 
     private void sharedJoke(JokeBean bean) {
-        ShareJoke.share(this, bean);
+        if (bean != null) {
+            ShareUtil.shareJoke(this, bean);
+        }
     }
 
     private OnJokeDownloadListener listener = new OnJokeDownloadListener() {
         @Override
-        public void onDownloadError() {
+        public void onDownloadError(int lastPage, int maxJokeId) {
             onEnd();
 
+            DataSharedPreferences.setLastJokePage(lastPage);
+            DataSharedPreferences.setMaxJokeId(maxJokeId);
+
             Toast.makeText(MainActivity.this, R.string.pull_data_error, Toast.LENGTH_SHORT).show();
+
+            StatUtils.onRecentJoke(maxJokeId);
         }
 
         @Override
@@ -164,7 +235,9 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
         public void onDownload(List<JokeBean> list, int lastPage, int maxJokeId) {
             onEnd();
 
-            Toast.makeText(MainActivity.this, getString(R.string.pull_data_success, list.size()), Toast.LENGTH_SHORT).show();
+            int count = list.size();
+
+            Toast.makeText(MainActivity.this, getString(R.string.pull_data_success, count), Toast.LENGTH_SHORT).show();
             DataSharedPreferences.setLastJokePage(lastPage);
             DataSharedPreferences.setMaxJokeId(maxJokeId);
 
@@ -174,17 +247,25 @@ public class MainActivity extends Activity implements OnItemClickListener, OnCli
             }
 
             refreshAdapter();
+
+            listView.setSelection(count);
+            StatUtils.onRecentJoke(maxJokeId);
+        }
+
+        @Override
+        public void onProgress(int progress) {
+            progressDialog.setProgress(progress);
         }
 
         private void onEnd() {
-            jokeDownloader = null;
-            listView.stopRefresh();
+            progressDialog.dismiss();
 
             long timestamp = System.currentTimeMillis();
             DataSharedPreferences.setLastRefreshTime(timestamp);
             listView.setRefreshTime(Utils.formatTime(timestamp));
 
         }
+
     };
 
     private class LocalAdapter extends CursorAdapter {

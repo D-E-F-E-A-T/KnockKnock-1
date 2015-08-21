@@ -15,6 +15,9 @@ import com.cyanflxy.dapenti.htmlparser.JokeBean;
 import com.github.cyanflxy.knockknock.R;
 import com.github.cyanflxy.knockknock.data.DataSharedPreferences;
 import com.github.cyanflxy.knockknock.data.JokeDataBase;
+import com.github.cyanflxy.knockknock.push.BaiduPushReceiver;
+import com.github.cyanflxy.knockknock.share.ShareUtil;
+import com.github.cyanflxy.knockknock.statistics.StatUtils;
 import com.google.gson.Gson;
 
 import java.io.File;
@@ -23,11 +26,9 @@ import java.io.InputStream;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 
-public class SplashActivity extends Activity {
+public class SplashActivity extends StatActivity {
 
-    private static final String API_KEY = "mkdFy97aCrSkHX0RtAkxUdIA";
-
-    private static final int SPLASH_TIME = 500;
+    private static final int SPLASH_TIME = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,12 +37,22 @@ public class SplashActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.activity_splash);
 
+        boolean startFromNotification = getIntent().getBooleanExtra(MainActivity.ARG_FROM_TIMER_NOTIFICATION, false);
+        if(startFromNotification){
+            StatUtils.onEvent(StatUtils.EVENT_NOTIFICATION_LAUNCH);
+        }
+
         LocalHandler handler = new LocalHandler(this);
         handler.setStartTime(System.currentTimeMillis());
+        handler.setStartFromNotification(startFromNotification);
 
         new Thread(new InitRunnable(this, handler)).start();
 
-        PushManager.startWork(this, PushConstants.LOGIN_TYPE_API_KEY, API_KEY);
+        // 启动百度push
+        PushManager.startWork(this, PushConstants.LOGIN_TYPE_API_KEY, BaiduPushReceiver.API_KEY);
+
+        // 注册微信分享sdk
+        ShareUtil.register();
     }
 
     private static class LocalHandler extends Handler {
@@ -49,6 +60,7 @@ public class SplashActivity extends Activity {
         private Reference<Activity> localActivity;
 
         private long startTime;
+        private boolean startFromNotification;
 
         public LocalHandler(Activity activity) {
             super();
@@ -58,6 +70,10 @@ public class SplashActivity extends Activity {
 
         public void setStartTime(long start) {
             startTime = start;
+        }
+
+        public void setStartFromNotification(boolean b) {
+            startFromNotification = b;
         }
 
         @Override
@@ -72,8 +88,12 @@ public class SplashActivity extends Activity {
             if (remain > 0) {
                 sendEmptyMessageDelayed(0, remain);
             } else {
+                StatUtils.onEvent(StatUtils.EVENT_LAUNCH);
+
                 act.finish();
-                act.startActivity(new Intent(act, MainActivity.class));
+                Intent intent = new Intent(act, MainActivity.class);
+                intent.putExtra(MainActivity.ARG_FROM_TIMER_NOTIFICATION, startFromNotification);
+                act.startActivity(intent);
             }
         }
     }

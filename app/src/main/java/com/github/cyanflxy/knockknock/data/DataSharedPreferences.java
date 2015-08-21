@@ -2,8 +2,10 @@ package com.github.cyanflxy.knockknock.data;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 
 import com.github.cyanflxy.knockknock.AppApplication;
+import com.sina.weibo.sdk.auth.Oauth2AccessToken;
 
 public class DataSharedPreferences {
 
@@ -14,7 +16,7 @@ public class DataSharedPreferences {
     private static final String KEY_MAX_JOKE_ID = "max_joke_id";
 
     public static void setMaxJokeId(int id) {
-        SharedPreferences.Editor editor = dataSp.edit();
+        Editor editor = dataSp.edit();
         editor.putInt(KEY_MAX_JOKE_ID, id);
         editor.apply();
     }
@@ -26,7 +28,7 @@ public class DataSharedPreferences {
     private static final String KEY_LAST_JOKE_PAGE = "last_joke_page";
 
     public static void setLastJokePage(int id) {
-        SharedPreferences.Editor editor = dataSp.edit();
+        Editor editor = dataSp.edit();
         editor.putInt(KEY_LAST_JOKE_PAGE, id);
         editor.apply();
     }
@@ -38,7 +40,7 @@ public class DataSharedPreferences {
     private static final String KEY_LAST_REFRESH_TIME = "last_refresh_time";
 
     public static void setLastRefreshTime(long timestamp) {
-        SharedPreferences.Editor editor = dataSp.edit();
+        Editor editor = dataSp.edit();
         editor.putLong(KEY_LAST_REFRESH_TIME, timestamp);
         editor.apply();
     }
@@ -47,4 +49,39 @@ public class DataSharedPreferences {
         long time = dataSp.getLong(KEY_LAST_REFRESH_TIME, 0);
         return Utils.formatTime(time);
     }
+
+    private static final String KEY_UID = "uid";
+    private static final String KEY_ACCESS_TOKEN = "access_token";
+    private static final String KEY_EXPIRES_IN = "expires_in";
+    private static final String KEY_REFRESH_TOKEN = "refresh_token";
+
+    /**
+     * 保存 Token 对象到 SharedPreferences。
+     *
+     * @param token Token 对象
+     */
+    public static void writeAccessToken(Oauth2AccessToken token) {
+        Editor editor = dataSp.edit();
+        editor.putString(KEY_UID, token.getUid());
+        editor.putString(KEY_ACCESS_TOKEN, token.getToken());
+        editor.putString(KEY_REFRESH_TOKEN, token.getRefreshToken());
+        editor.putLong(KEY_EXPIRES_IN, token.getExpiresTime());
+        editor.apply();
+    }
+
+    /**
+     * 从 SharedPreferences 读取 Token 信息。
+     *
+     * @return 返回 Token 对象
+     */
+    public static Oauth2AccessToken readAccessToken() {
+        Oauth2AccessToken token = new Oauth2AccessToken();
+        token.setUid(dataSp.getString(KEY_UID, ""));
+        token.setToken(dataSp.getString(KEY_ACCESS_TOKEN, ""));
+        token.setRefreshToken(dataSp.getString(KEY_REFRESH_TOKEN, ""));
+        token.setExpiresTime(dataSp.getLong(KEY_EXPIRES_IN, 0));
+
+        return token;
+    }
+
 }

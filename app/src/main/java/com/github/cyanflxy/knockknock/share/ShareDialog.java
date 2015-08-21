@@ -1,7 +1,7 @@
 package com.github.cyanflxy.knockknock.share;
 
+import android.app.Activity;
 import android.app.Dialog;
-import android.content.Context;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
@@ -11,9 +11,13 @@ import com.github.cyanflxy.knockknock.R;
 
 public class ShareDialog extends Dialog implements View.OnClickListener {
 
-    public ShareDialog(Context context) {
-        super(context, R.style.common_dialog_style);
-        setCancelable(false);
+    private Activity activity;
+    private OnShareListener onShareListener;
+
+    public ShareDialog(Activity activity, OnShareListener l) {
+        super(activity, R.style.common_dialog_style);
+        this.activity = activity;
+        onShareListener = l;
     }
 
     @Override
@@ -39,18 +43,24 @@ public class ShareDialog extends Dialog implements View.OnClickListener {
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.share_weibo:
+                onShareListener.onShare(activity, ShareUtil.SHARE_TYPE_WEIBO);
                 break;
             case R.id.share_weixin_circle:
+                onShareListener.onShare(activity, ShareUtil.SHARE_TYPE_WEIXIN_CIRCLE);
                 break;
             case R.id.share_weixin_friend:
+                onShareListener.onShare(activity, ShareUtil.SHARE_TYPE_WEIXIN_FRIEND);
                 break;
             case R.id.share_qq:
+                onShareListener.onShare(activity, ShareUtil.SHARE_TYPE_QQ);
                 break;
             case R.id.share_qzone:
+                onShareListener.onShare(activity, ShareUtil.SHARE_TYPE_QZONE);
                 break;
-            case R.id.cancel:
-                dismiss();
+            default:
                 break;
         }
+        dismiss();
     }
+
 }

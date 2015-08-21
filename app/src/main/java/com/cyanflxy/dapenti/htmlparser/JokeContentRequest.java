@@ -35,7 +35,7 @@ public class JokeContentRequest extends Request<JokeBean> {
         mListener.onResponse(response);
     }
 
-    public JokeBean getJoke(byte[] data) throws IOException {
+    private JokeBean getJoke(byte[] data) throws IOException {
         JokeBean jokeBean = new JokeBean();
         jokeBean.id = HtmlParserUtils.getId(getUrl());
 
@@ -57,10 +57,21 @@ public class JokeContentRequest extends Request<JokeBean> {
             }
             jokeBean.title = title.substring(indexLabel + 4);
 
-            int indexStart = is.indexOf("<DIV class=oblog_text ");
-            int indexEnd = is.indexOf("</DIV>", indexStart);
-            String contentPart = is.subString(indexStart, indexEnd);
-            jokeBean.content = filterJoke(contentPart);
+            while (true) {
+                int indexStart = is.indexOf("<DIV");
+                int indexEnd = is.indexOf("</DIV>", indexStart);
+                if (indexStart < 0 || indexEnd < 0) {
+                    break;
+                }
+
+                String contentPart = is.subString(indexStart, indexEnd);
+                is.trunc(indexEnd);
+
+                if (contentPart.contains("blog_text") && !contentPart.contains("发布于")) {
+                    jokeBean.content = filterJoke(contentPart);
+                    break;
+                }
+            }
         } finally {
             is.close();
         }
@@ -109,7 +120,7 @@ public class JokeContentRequest extends Request<JokeBean> {
             sb.delete(sourceIndex, sb.length());
         }
 
-        String filterString = ":：\n ";
+        String filterString = ":：\n \t";
         deleteHeaderChar(sb, filterString);
         deleteEndChar(sb, filterString);
 
