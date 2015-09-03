@@ -54,9 +54,11 @@ public class DataSharedPreferences {
     private static final String KEY_START_TIME = "start_time";
 
     public static void setStartTime() {
-        Editor editor = dataSp.edit();
-        editor.putLong(KEY_START_TIME, System.currentTimeMillis());
-        editor.apply();
+        if (!dataSp.contains(KEY_START_TIME)) {
+            Editor editor = dataSp.edit();
+            editor.putLong(KEY_START_TIME, System.currentTimeMillis());
+            editor.apply();
+        }
     }
 
     public static boolean isShowAd() {

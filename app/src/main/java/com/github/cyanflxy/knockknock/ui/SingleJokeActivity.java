@@ -49,7 +49,11 @@ public class SingleJokeActivity extends StatActivity implements View.OnClickList
         content.setText(jokeBean.content);
 
         if (DataSharedPreferences.isShowAd()) {
-            showAd();
+            try {
+                showAd();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

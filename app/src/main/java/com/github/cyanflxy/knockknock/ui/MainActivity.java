@@ -96,8 +96,12 @@ public class MainActivity extends StatActivity implements OnItemClickListener, O
         listView.setOnItemClickListener(this);
         jokeDownloader = new JokeDownloader(this, listener);
 
-        if(DataSharedPreferences.isShowAd()){
-            showBannerAd();
+        if (DataSharedPreferences.isShowAd()) {
+            try {
+                showBannerAd();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
         // 友盟更新

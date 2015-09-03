@@ -7,8 +7,8 @@ android {
         applicationId "com.github.cyanflxy.knockknock"
         minSdkVersion 10
         targetSdkVersion 23
-        versionCode 3
-        versionName "1.3"
+        versionCode 4
+        versionName "1.4"
     }
     //签名配置
     signingConfigs {
@@ -39,7 +39,7 @@ android {
     productFlavors {
         dev{}//开发
         umeng{}//友盟
-        xiaoxi {}//小米
+        xiaomi {}//小米
         qihu {}//奇虎360
         baidu {}//百度助手
         androidmarket{}//android市场（百度）
