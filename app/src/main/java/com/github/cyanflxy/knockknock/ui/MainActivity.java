@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
@@ -20,12 +21,14 @@ import android.widget.CursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.baidu.appx.BDBannerAd;
 import com.cyanflxy.dapenti.htmlparser.JokeBean;
 import com.cyanflxy.dapenti.htmlparser.JokeDownloader;
 import com.cyanflxy.dapenti.htmlparser.JokeDownloader.OnJokeDownloadListener;
 import com.cyanflxy.dapenti.htmlparser.JokeHrefRequest;
 import com.github.cyanflxy.knockknock.BuildConfig;
 import com.github.cyanflxy.knockknock.R;
+import com.github.cyanflxy.knockknock.ad.AdConstant;
 import com.github.cyanflxy.knockknock.data.DataSharedPreferences;
 import com.github.cyanflxy.knockknock.data.JokeDataBase;
 import com.github.cyanflxy.knockknock.data.Utils;
@@ -92,6 +95,8 @@ public class MainActivity extends StatActivity implements OnItemClickListener, O
 
         listView.setOnItemClickListener(this);
         jokeDownloader = new JokeDownloader(this, listener);
+
+        showBannerAd();
 
         // 友盟更新
         UmengUpdateAgent.update(this);
@@ -181,7 +186,7 @@ public class MainActivity extends StatActivity implements OnItemClickListener, O
         progressDialog.setOnCancelListener(new DialogInterface.OnCancelListener() {
             @Override
             public void onCancel(DialogInterface dialog) {
-                if(jokeDownloader != null){
+                if (jokeDownloader != null) {
                     jokeDownloader.cancel();
                 }
             }
@@ -209,6 +214,14 @@ public class MainActivity extends StatActivity implements OnItemClickListener, O
         if (bean != null) {
             ShareUtil.shareJoke(this, bean);
         }
+    }
+
+    private void showBannerAd() {
+        BDBannerAd bannerAdView = new BDBannerAd(this, AdConstant.BD_AD_API_KEY, AdConstant.BD_AD_ID_BANNER);
+        ViewGroup parent = (ViewGroup) findViewById(R.id.ad);
+
+        LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+        parent.addView(bannerAdView,params);
     }
 
     private OnJokeDownloadListener listener = new OnJokeDownloadListener() {

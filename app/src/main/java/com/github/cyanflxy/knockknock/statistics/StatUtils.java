@@ -10,14 +10,10 @@ import java.util.Map;
 
 public class StatUtils {
     public static final String UMENG_APP_KEY = "55d85439e0f55a3753004da8";
-    public static final String UMENG_CHANNEL_ID = "Dev";
 
     public static void init() {
         AnalyticsConfig.setAppkey(StatUtils.UMENG_APP_KEY);
-        AnalyticsConfig.setChannel(StatUtils.UMENG_CHANNEL_ID);
-
         UmengUpdateAgent.setAppkey(StatUtils.UMENG_APP_KEY);
-        UmengUpdateAgent.setChannel(StatUtils.UMENG_CHANNEL_ID);
         UmengUpdateAgent.setUpdateCheckConfig(false);
     }
 

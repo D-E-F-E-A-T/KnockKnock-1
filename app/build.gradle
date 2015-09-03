@@ -30,12 +30,26 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_6
         targetCompatibility JavaVersion.VERSION_1_6
     }
     productFlavors {
+        dev{}//开发
+        umeng{}//友盟
+        xiaoxi {}//小米
+        qihu {}//奇虎360
+        baidu {}//百度助手
+        androidmarket{}//android市场（百度）
+        nineone_91{}//91助手
+        wandoujia {}//豌豆荚
+        tencent{}//腾讯
+    }
+
+    productFlavors.all {
+        flavor -> flavor.manifestPlaceholders = [UMENG_CHANNEL_ID: name]
     }
 }
 

@@ -6,8 +6,10 @@ import android.view.View;
 import android.view.Window;
 import android.widget.TextView;
 
+import com.baidu.appx.BDInterstitialAd;
 import com.cyanflxy.dapenti.htmlparser.JokeBean;
 import com.github.cyanflxy.knockknock.R;
+import com.github.cyanflxy.knockknock.ad.AdConstant;
 import com.github.cyanflxy.knockknock.data.Utils;
 import com.github.cyanflxy.knockknock.share.ShareUtil;
 
@@ -44,11 +46,13 @@ public class SingleJokeActivity extends StatActivity implements View.OnClickList
 
         TextView content = (TextView) findViewById(R.id.joke_content);
         content.setText(jokeBean.content);
+
+        showAd();
     }
 
     @Override
     public void onClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.back:
                 finish();
                 break;
@@ -56,5 +60,48 @@ public class SingleJokeActivity extends StatActivity implements View.OnClickList
                 ShareUtil.shareJoke(SingleJokeActivity.this, jokeBean);
                 break;
         }
+    }
+
+    private void showAd() {
+
+        final BDInterstitialAd appxInterstitialAdView = new BDInterstitialAd(this,
+                AdConstant.BD_AD_API_KEY, AdConstant.BD_AD_API_Interstitial);
+
+        appxInterstitialAdView.setAdListener(new BDInterstitialAd.InterstitialAdListener() {
+
+            boolean shown = false;
+
+            @Override
+            public void onAdvertisementDataDidLoadFailure() {
+            }
+
+            @Override
+            public void onAdvertisementDataDidLoadSuccess() {
+                if (!shown) {
+                    appxInterstitialAdView.showAd();
+                    shown = true;
+                }
+            }
+
+            @Override
+            public void onAdvertisementViewDidClick() {
+            }
+
+            @Override
+            public void onAdvertisementViewDidHide() {
+            }
+
+            @Override
+            public void onAdvertisementViewDidShow() {
+            }
+
+            @Override
+            public void onAdvertisementViewWillStartNewIntent() {
+            }
+
+        });
+
+        appxInterstitialAdView.loadAd();
+
     }
 }
