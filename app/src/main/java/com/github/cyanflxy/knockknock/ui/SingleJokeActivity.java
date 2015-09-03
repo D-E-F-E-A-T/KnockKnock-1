@@ -10,6 +10,7 @@ import com.baidu.appx.BDInterstitialAd;
 import com.cyanflxy.dapenti.htmlparser.JokeBean;
 import com.github.cyanflxy.knockknock.R;
 import com.github.cyanflxy.knockknock.ad.AdConstant;
+import com.github.cyanflxy.knockknock.data.DataSharedPreferences;
 import com.github.cyanflxy.knockknock.data.Utils;
 import com.github.cyanflxy.knockknock.share.ShareUtil;
 
@@ -47,7 +48,9 @@ public class SingleJokeActivity extends StatActivity implements View.OnClickList
         TextView content = (TextView) findViewById(R.id.joke_content);
         content.setText(jokeBean.content);
 
-        showAd();
+        if (DataSharedPreferences.isShowAd()) {
+            showAd();
+        }
     }
 
     @Override

@@ -96,7 +96,9 @@ public class MainActivity extends StatActivity implements OnItemClickListener, O
         listView.setOnItemClickListener(this);
         jokeDownloader = new JokeDownloader(this, listener);
 
-        showBannerAd();
+        if(DataSharedPreferences.isShowAd()){
+            showBannerAd();
+        }
 
         // 友盟更新
         UmengUpdateAgent.update(this);
@@ -221,7 +223,7 @@ public class MainActivity extends StatActivity implements OnItemClickListener, O
         ViewGroup parent = (ViewGroup) findViewById(R.id.ad);
 
         LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        parent.addView(bannerAdView,params);
+        parent.addView(bannerAdView, params);
     }
 
     private OnJokeDownloadListener listener = new OnJokeDownloadListener() {

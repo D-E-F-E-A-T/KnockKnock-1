@@ -50,6 +50,24 @@ public class DataSharedPreferences {
         return Utils.formatTime(time);
     }
 
+
+    private static final String KEY_START_TIME = "start_time";
+
+    public static void setStartTime() {
+        Editor editor = dataSp.edit();
+        editor.putLong(KEY_START_TIME, System.currentTimeMillis());
+        editor.apply();
+    }
+
+    public static boolean isShowAd() {
+        long start = dataSp.getLong(KEY_START_TIME, 0);
+        if (System.currentTimeMillis() - start > 36 * 60 * 60 * 1000) {// 36小时之后打开广告
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     private static final String KEY_UID = "uid";
     private static final String KEY_ACCESS_TOKEN = "access_token";
     private static final String KEY_EXPIRES_IN = "expires_in";

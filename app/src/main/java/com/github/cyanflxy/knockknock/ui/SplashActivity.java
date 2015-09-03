@@ -53,6 +53,8 @@ public class SplashActivity extends StatActivity {
 
         // 注册微信分享sdk
         ShareUtil.register();
+
+        DataSharedPreferences.setStartTime();
     }
 
     private static class LocalHandler extends Handler {
