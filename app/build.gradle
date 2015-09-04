@@ -7,8 +7,8 @@ android {
         applicationId "com.github.cyanflxy.knockknock"
         minSdkVersion 10
         targetSdkVersion 23
-        versionCode 4
-        versionName "1.4"
+        versionCode 20
+        versionName "2.0"
     }
     //签名配置
     signingConfigs {
